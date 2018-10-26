@@ -66,8 +66,10 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.PackageItemInfo.cs: public int Banner {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.PackageManager.cs: public abstract Android.Graphics.Drawables.Drawable GetUserBadgedDrawableForDensity (Android.Graphics.Drawables.Drawable drawable, Android.OS.UserHandle user, Android.Graphics.Rect badgeLocation, int badgeDensity);
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.PackageManager.cs: public abstract int InstantAppCookieMaxBytes {
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.PackageManager.cs: public abstract void SetApplicationCategory(string packageName, int categoryHint);
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.PackageManager.cs: public override unsafe Android.Graphics.Drawables.Drawable GetUserBadgedDrawableForDensity (Android.Graphics.Drawables.Drawable drawable, Android.OS.UserHandle user, Android.Graphics.Rect badgeLocation, int badgeDensity)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.PackageManager.cs: public override unsafe int InstantAppCookieMaxBytes {
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.PackageManager.cs: public override unsafe void SetApplicationCategory(string packageName, int categoryHint)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.PermissionGroupInfo.cs: public int Priority {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.ResolveInfo.cs: public int Priority {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Content.PM.ShortcutInfo.cs: public unsafe int Rank {
@@ -101,6 +103,7 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Graphics.ColorSpace.cs: public override unsafe float GetMaxValue (int component)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Graphics.ColorSpace.cs: public override unsafe float GetMinValue (int component)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Graphics.ColorSpace.cs: public override unsafe float GetMinValue (int component)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Graphics.Drawables.Drawable.cs: public virtual unsafe bool OnLayoutDirectionChanged (int layoutDirection)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Graphics.Drawables.GradientDrawable.cs: public virtual unsafe int[] GetColors ()
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Graphics.Drawables.LayerDrawable.cs: public virtual unsafe int AddLayer (Android.Graphics.Drawables.Drawable dr)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Graphics.Drawables.LayerDrawable.cs: public virtual unsafe int GetLayerInsetBottom ()
@@ -341,6 +344,10 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioDeviceInfo.cs: public unsafe int[] GetChannelIndexMasks ()
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioDeviceInfo.cs: public unsafe int[] GetChannelMasks ()
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioDeviceInfo.cs: public unsafe int[] GetSampleRates ()
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioRecord.cs: public virtual unsafe  (Java.Nio.ByteBuffer audioBuffer, , int readMode)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioRecord.cs: public virtual unsafe  (byte[] audioData, InBytes, , int readMode)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioRecord.cs: public virtual unsafe  (float[] audioData, InFloats, , int readMode)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioRecord.cs: public virtual unsafe  (short[] audioData, InShorts, , int readMode)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioRecord.cs: public virtual unsafe int BufferSizeInFrames {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioTrack.cs: public virtual unsafe int BufferCapacityInFrames {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.AudioTrack.cs: public virtual unsafe int BufferSizeInFrames {
@@ -402,11 +409,13 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.MediaDescrambler.cs: public unsafe MediaDescrambler (int CA_system_id)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.MediaDescrambler.cs: public unsafe int Descramble (Java.Nio.ByteBuffer srcBuf, Java.Nio.ByteBuffer dstBuf, Android.Media.MediaCodec.CryptoInfo cryptoInfo)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.MediaDrm.cs: public int Extra {
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.MediaDrm.cs: public unsafe Android.Media.MediaDrm.KeyRequest GetKeyRequest (byte[] scope, byte[] init, string mimeType, int keyType, System.Collections.Generic.IDictionary<string, string> optionalParameters)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.MediaDrm.cs: public unsafe int RequestType {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.MediaRouter.cs: public virtual unsafe void RequestUpdateVolume (int direction)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.MediaSync.cs: public ErrorEventArgs (Android.Media.MediaSync sync, Android.Media.MediaSyncErrorCode what, int extra)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.MediaSync.cs: public int Extra {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.MicrophoneInfo.cs: public unsafe int Group {
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.PlaybackParams.cs: public unsafe Android.Media.PlaybackParams SetAudioFallbackMode (int audioFallbackMode)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.Projection.MediaProjectionManager.cs: public unsafe Android.Media.Projection.MediaProjection GetMediaProjection (int resultCode, Android.Content.Intent resultData)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.Session.MediaController.cs: public unsafe int CurrentVolume {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.SoundPool.cs: public global::System.Threading.Tasks.Task<int> LoadAsync (Android.Content.Context context, , int priority)
@@ -419,6 +428,8 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.SoundPool.cs: public virtual unsafe int Load (Android.Content.Res.AssetFileDescriptor afd, int priority)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.SoundPool.cs: public virtual unsafe int Load (Java.IO.FileDescriptor fd, long offset, long length, int priority)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.SoundPool.cs: public virtual unsafe int Load (string path, int priority)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.SyncParams.cs: public unsafe Android.Media.SyncParams SetAudioAdjustMode (int audioAdjustMode)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.SyncParams.cs: public unsafe Android.Media.SyncParams SetSyncSource (int syncSource)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Media.VolumeProvider.cs: public unsafe int CurrentVolume {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Mtp.MtpEvent.cs: public virtual unsafe int DevicePropCode {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Mtp.MtpEvent.cs: public virtual unsafe int ObjectFormatCode {
@@ -466,6 +477,7 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.OS.Health.HealthStats.cs: public virtual unsafe long GetMeasurement (int key)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.OS.Health.HealthStats.cs: public virtual unsafe long GetTimerTime (int key)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.OS.Health.SystemHealthManager.cs: public virtual unsafe Android.OS.Health.HealthStats[] TakeUidSnapshots (int[] uids)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.OS.MessageQueue.cs: public virtual unsafe void AddOnFileDescriptorEventListener (Java.IO.FileDescriptor fd, int events, Android.OS.MessageQueue.IOnFileDescriptorEventListener listener)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.OS.Process.cs: public static unsafe int[] GetExclusiveCores ()
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.OS.ProxyFileDescriptorCallback.cs: public virtual unsafe int OnRead (long offset, , byte[] data)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.OS.ProxyFileDescriptorCallback.cs: public virtual unsafe int OnWrite (long offset, , byte[] data)
@@ -620,6 +632,8 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Views.View.cs: public virtual unsafe int SolidColor {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Views.View.cs: public virtual unsafe void GetLocationInWindow (int[] outLocation)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Views.View.cs: public virtual unsafe void GetLocationOnScreen (int[] outLocation)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Views.View.cs: public virtual unsafe void SetScrollIndicators (int indicators)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Views.View.cs: public virtual unsafe void SetScrollIndicators (int indicators, int mask)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Views.ViewDebug.cs: public abstract int Equals ();
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Views.ViewDebug.cs: public abstract int From ();
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Android.Views.ViewDebug.cs: public abstract int Mask ();
@@ -790,9 +804,12 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IArray.cs: public unsafe int BaseType {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IBlob.cs: public unsafe int SetBytes (long pos, byte[] bytes)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IBlob.cs: public unsafe int SetBytes (long pos, byte[] bytes, , 
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ICallableStatement.cs: public unsafe bool Execute (string sql, int autoGeneratedKeys)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ICallableStatement.cs: public unsafe bool Execute (string sql, int[] columnIndexes)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ICallableStatement.cs: public unsafe bool GetMoreResults (int current)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ICallableStatement.cs: public unsafe int ExecuteUpdate ()
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ICallableStatement.cs: public unsafe int ExecuteUpdate (string sql)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ICallableStatement.cs: public unsafe int ExecuteUpdate (string sql, int autoGeneratedKeys)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ICallableStatement.cs: public unsafe int ExecuteUpdate (string sql, int[] columnIndexes)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ICallableStatement.cs: public unsafe int ExecuteUpdate (string sql, string[] columnNames)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ICallableStatement.cs: public unsafe int FetchDirection {
@@ -819,9 +836,14 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IClob.cs: public unsafe int SetString (long pos, string str, , 
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.ICallableStatement PrepareCall (string sql, int resultSetType, int resultSetConcurrency)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.ICallableStatement PrepareCall (string sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.IPreparedStatement PrepareStatement (string sql, int autoGeneratedKeys)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.IPreparedStatement PrepareStatement (string sql, int resultSetType, int resultSetConcurrency)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.IPreparedStatement PrepareStatement (string sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.IPreparedStatement PrepareStatement (string sql, int[] columnIndexes)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.ISavepoint SetSavepoint ()
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.ISavepoint SetSavepoint (string name)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.IStatement CreateStatement (int resultSetType, int resultSetConcurrency)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe Java.Sql.IStatement CreateStatement (int resultSetType, int resultSetConcurrency, int resultSetHoldability)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe int Holdability {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe int TransactionIsolation {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IConnection.cs: public unsafe void ReleaseSavepoint (Java.Sql.ISavepoint savepoint)
@@ -861,9 +883,12 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IParameterMetaData.cs: public unsafe int IsNullable (int param)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IParameterMetaData.cs: public unsafe string GetParameterClassName (int param)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IParameterMetaData.cs: public unsafe string GetParameterTypeName (int param)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IPreparedStatement.cs: public unsafe bool Execute (string sql, int autoGeneratedKeys)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IPreparedStatement.cs: public unsafe bool Execute (string sql, int[] columnIndexes)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IPreparedStatement.cs: public unsafe bool GetMoreResults (int current)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IPreparedStatement.cs: public unsafe int ExecuteUpdate ()
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IPreparedStatement.cs: public unsafe int ExecuteUpdate (string sql)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IPreparedStatement.cs: public unsafe int ExecuteUpdate (string sql, int autoGeneratedKeys)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IPreparedStatement.cs: public unsafe int ExecuteUpdate (string sql, int[] columnIndexes)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IPreparedStatement.cs: public unsafe int ExecuteUpdate (string sql, string[] columnNames)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IPreparedStatement.cs: public unsafe int FetchDirection {
@@ -888,8 +913,11 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IResultSetMetaData.cs: public unsafe int IsNullable (
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ISavepoint.cs:	public partial interface ISavepoint : IJavaObject {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.ISavepoint.cs: public static ISavepoint GetObject (IntPtr handle, JniHandleOwnership transfer)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IStatement.cs: public unsafe bool Execute (string sql, int autoGeneratedKeys)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IStatement.cs: public unsafe bool Execute (string sql, int[] columnIndexes)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IStatement.cs: public unsafe bool GetMoreResults (int current)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IStatement.cs: public unsafe int ExecuteUpdate (string sql)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IStatement.cs: public unsafe int ExecuteUpdate (string sql, int autoGeneratedKeys)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IStatement.cs: public unsafe int ExecuteUpdate (string sql, int[] columnIndexes)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IStatement.cs: public unsafe int ExecuteUpdate (string sql, string[] columnNames)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Sql.IStatement.cs: public unsafe int FetchDirection {
@@ -991,8 +1019,11 @@
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Calendar.cs: public virtual unsafe Java.Util.Calendar.Builder SetTimeOfDay (OfDay, , , int millis)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Calendar.cs: public virtual unsafe Java.Util.Calendar.Builder SetWeekDate (int weekYear, int weekOfYear, )
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Calendar.cs: public virtual unsafe Java.Util.Calendar.Builder SetWeekDefinition (int firstDayOfWeek, )
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Calendar.cs: public virtual unsafe System.Collections.Generic.IDictionary<string, Java.Lang.Integer> GetDisplayNames (int field, int style, Java.Util.Locale locale)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Calendar.cs: public virtual unsafe int WeekYear {
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Calendar.cs: public virtual unsafe int WeeksInWeekYear {
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Calendar.cs: public virtual unsafe string GetDisplayName (int field, int style, Java.Util.Locale locale)
+../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Calendar.cs: public virtual unsafe void SetWeekDate (int weekYear, int weekOfYear, )
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Collections.cs: public static unsafe bool Disjoint (System.Collections.Generic.ICollection<object> c1, System.Collections.Generic.ICollection<object> c2)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Collections.cs: public static unsafe void Swap (System.Collections.Generic.IList<object> list,  int j)
 ../../src/Mono.Android/obj/Debug/android-XXX/mcw/Java.Util.Concurrent.ArrayBlockingQueue.cs: public virtual unsafe int RemainingCapacity ()

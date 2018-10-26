@@ -918,6 +918,7 @@ package android.app
     onCreate(android.os.Bundle savedInstanceState)
     onCreateDialog(android.os.Bundle savedInstanceState)
     onDismiss(android.content.DialogInterface dialog)
+    onGetLayoutInflater(android.os.Bundle savedInstanceState)
     onSaveInstanceState(android.os.Bundle outState)
     setCancelable(boolean cancelable)
     setShowsDialog(boolean showsDialog)
@@ -1985,6 +1986,7 @@ package android.app.admin
   class NetworkEvent
     writeToParcel(android.os.Parcel out, int flags)
   class SecurityLog.SecurityEvent
+    equals(java.lang.Object o)
     writeToParcel(android.os.Parcel dest, int flags)
   class SystemUpdateInfo
     equals(java.lang.Object o)
@@ -2044,7 +2046,6 @@ package android.app.backup
     #ctor(android.content.Context context, java.lang.String... files)
     performBackup(android.os.ParcelFileDescriptor oldState, android.app.backup.BackupDataOutput data, android.os.ParcelFileDescriptor newState)
     restoreEntity(android.app.backup.BackupDataInputStream data)
-  class FileBackupHelperBase
     writeNewStateDescription(android.os.ParcelFileDescriptor fd)
   class RestoreObserver
     onUpdate(int nowBeingRestored, java.lang.String currentPackage)
@@ -2054,6 +2055,7 @@ package android.app.backup
     performBackup(android.os.ParcelFileDescriptor oldState, android.app.backup.BackupDataOutput data, android.os.ParcelFileDescriptor newState)
     restoreEntity(android.app.backup.BackupDataInputStream data)
     #ctor(android.content.Context context, java.lang.String... prefGroups)
+    writeNewStateDescription(android.os.ParcelFileDescriptor fd)
 
 package android.app.job
 ;---------------------------------------
@@ -2450,6 +2452,7 @@ package android.bluetooth.le
     onStartFailure(int errorCode)
     onStartSuccess(android.bluetooth.le.AdvertiseSettings settingsInEffect)
   class AdvertiseData
+    equals(java.lang.Object obj)
     writeToParcel(android.os.Parcel dest, int flags)
   class AdvertiseData.Builder
     addManufacturerData(int manufacturerId, byte[] manufacturerSpecificData)
@@ -5079,7 +5082,6 @@ package android.graphics.drawable
     setAutoMirrored(boolean mirrored)
     setColorFilter(android.graphics.ColorFilter colorFilter)
     setRepeatCount(int repeatCount)
-    setVisible(boolean visible, boolean restart)
     unregisterAnimationCallback(android.graphics.drawable.Animatable2.AnimationCallback callback)
   class AnimatedStateListDrawable
     addState(int[] stateSet, android.graphics.drawable.Drawable drawable, int id)
@@ -7028,18 +7030,6 @@ package android.icu.util
   class Calendar.WeekData
     #ctor(int fdow, int mdifw, int weekendOnset, int weekendOnsetMillis, int weekendCease, int weekendCeaseMillis)
     equals(java.lang.Object other)
-  class CECalendar
-    #ctor(android.icu.util.TimeZone zone)
-    #ctor(android.icu.util.TimeZone zone, android.icu.util.ULocale locale)
-    #ctor(android.icu.util.TimeZone zone, java.util.Locale aLocale)
-    #ctor(android.icu.util.ULocale locale)
-    #ctor(int year, int month, int date)
-    #ctor(int year, int month, int date, int hour, int minute, int second)
-    #ctor(java.util.Date date)
-    #ctor(java.util.Locale aLocale)
-    handleComputeMonthStart(int eyear, int emonth, boolean useMonth)
-    handleGetLimit(int field, int limitType)
-    handleGetMonthLength(int extendedYear, int month)
   class ChineseCalendar
     add(int field, int amount)
     #ctor(android.icu.util.TimeZone zone)
@@ -7067,6 +7057,10 @@ package android.icu.util
     #ctor(int year, int month, int date, int hour, int minute, int second)
     #ctor(java.util.Date date)
     #ctor(java.util.Locale aLocale)
+    handleComputeFields(int julianDay)
+    handleComputeMonthStart(int eyear, int emonth, boolean useMonth)
+    handleGetLimit(int field, int limitType)
+    handleGetMonthLength(int extendedYear, int month)
   class Currency
     #ctor(java.lang.String theISOCode)
     getAvailableCurrencyCodes(android.icu.util.ULocale loc, java.util.Date d)
@@ -7100,6 +7094,10 @@ package android.icu.util
     #ctor(int year, int month, int date, int hour, int minute, int second)
     #ctor(java.util.Date date)
     #ctor(java.util.Locale aLocale)
+    handleComputeFields(int julianDay)
+    handleComputeMonthStart(int eyear, int emonth, boolean useMonth)
+    handleGetLimit(int field, int limitType)
+    handleGetMonthLength(int extendedYear, int month)
     setAmeteAlemEra(boolean onOff)
   class GregorianCalendar
     getActualMaximum(int field)
@@ -7138,6 +7136,7 @@ package android.icu.util
     #ctor(java.util.Date date)
     #ctor(java.util.Locale aLocale)
     roll(int field, int amount)
+    validateField(int field)
   class ICUUncheckedIOException
     #ctor(java.lang.String message)
     #ctor(java.lang.String message, java.lang.Throwable cause)
@@ -14248,6 +14247,7 @@ package android.telephony.cdma
 package android.telephony.data
 ;---------------------------------------
   class ApnSetting
+    equals(java.lang.Object o)
     writeToParcel(android.os.Parcel dest, int flags)
   class ApnSetting.Builder
     setApnName(java.lang.String apnName)
@@ -14561,6 +14561,14 @@ package android.text
   class Spannable.Factory
     newSpannable(java.lang.CharSequence source)
   class SpannableString
+    charAt(int i)
+    equals(java.lang.Object o)
+    getChars(int start, int end, char[] dest, int off)
+    getSpanEnd(java.lang.Object what)
+    getSpanFlags(java.lang.Object what)
+    <T> getSpans(int queryStart, int queryEnd, java.lang.Class<T> kind)
+    getSpanStart(java.lang.Object what)
+    nextSpanTransition(int start, int limit, java.lang.Class kind)
     removeSpan(java.lang.Object what)
     setSpan(java.lang.Object what, int start, int end, int flags)
     #ctor(java.lang.CharSequence source)
@@ -14592,7 +14600,13 @@ package android.text
     #ctor(java.lang.CharSequence text, int start, int end)
     subSequence(int start, int end)
     valueOf(java.lang.CharSequence source)
-  class SpannableStringInternal
+  interface Spanned
+    getSpanEnd(java.lang.Object tag)
+    getSpanFlags(java.lang.Object tag)
+    <T> getSpans(int start, int end, java.lang.Class<T> type)
+    getSpanStart(java.lang.Object tag)
+    nextSpanTransition(int start, int limit, java.lang.Class type)
+  class SpannedString
     charAt(int i)
     equals(java.lang.Object o)
     getChars(int start, int end, char[] dest, int off)
@@ -14601,13 +14615,6 @@ package android.text
     <T> getSpans(int queryStart, int queryEnd, java.lang.Class<T> kind)
     getSpanStart(java.lang.Object what)
     nextSpanTransition(int start, int limit, java.lang.Class kind)
-  interface Spanned
-    getSpanEnd(java.lang.Object tag)
-    getSpanFlags(java.lang.Object tag)
-    <T> getSpans(int start, int end, java.lang.Class<T> type)
-    getSpanStart(java.lang.Object tag)
-    nextSpanTransition(int start, int limit, java.lang.Class type)
-  class SpannedString
     #ctor(java.lang.CharSequence source)
     subSequence(int start, int end)
     valueOf(java.lang.CharSequence source)
@@ -15534,6 +15541,8 @@ package android.util
     writeEvent(int tag, java.lang.Object... list)
     writeEvent(int tag, java.lang.String str)
     writeEvent(int tag, long value)
+  class EventLog.Event
+    equals(java.lang.Object o)
   class EventLogTags
     #ctor(java.io.BufferedReader input)
     get(int tag)
@@ -17139,6 +17148,7 @@ package android.view
     onFocusGained(android.view.WindowId token)
     onFocusLost(android.view.WindowId token)
   class WindowInsets
+    equals(java.lang.Object o)
     replaceSystemWindowInsets(android.graphics.Rect systemWindowInsets)
     replaceSystemWindowInsets(int left, int top, int right, int bottom)
     #ctor(android.view.WindowInsets src)
@@ -18041,8 +18051,6 @@ package android.webkit
     setQuotaForOrigin(java.lang.String origin, long quota)
   interface WebStorage.QuotaUpdater
     updateQuota(long newQuota)
-  class WebSyncManager
-    #ctor(android.content.Context context, java.lang.String name)
   class WebView
     addJavascriptInterface(java.lang.Object object, java.lang.String name)
     autofill(android.util.SparseArray<android.view.autofill.AutofillValue> values)
@@ -18227,6 +18235,7 @@ package android.widget
     reclaimViews(java.util.List<android.view.View> views)
     requestDisallowInterceptTouchEvent(boolean disallowIntercept)
     scrollListBy(int y)
+    sendAccessibilityEventUnchecked(android.view.accessibility.AccessibilityEvent event)
     setAdapter(android.widget.ListAdapter adapter)
     setCacheColorHint(int color)
     setChoiceMode(int choiceMode)
@@ -19471,6 +19480,7 @@ package android.widget
     onMeasure(int widthMeasureSpec, int heightMeasureSpec)
     onRestoreInstanceState(android.os.Parcelable state)
     onWindowFocusChanged(boolean hasWindowFocus)
+    requestFocus(int direction, android.graphics.Rect previouslyFocusedRect)
     #ctor(android.content.Context context)
     #ctor(android.content.Context context, android.util.AttributeSet attrs)
     #ctor(android.content.Context context, android.util.AttributeSet attrs, int defStyleAttr)
@@ -20119,6 +20129,9 @@ package android.widget
     #ctor(android.content.Context context)
     #ctor(android.content.Context context, android.util.AttributeSet attrs)
 
+package androidx.annotation
+;---------------------------------------
+
 package dalvik.annotation
 ;---------------------------------------
 
@@ -20725,26 +20738,6 @@ package java.lang
 ;---------------------------------------
   class AbstractMethodError
     #ctor(java.lang.String s)
-  class AbstractStringBuilder
-    append(char c)
-    append(java.lang.CharSequence s)
-    append(java.lang.CharSequence s, int start, int end)
-    charAt(int index)
-    codePointAt(int index)
-    codePointBefore(int index)
-    codePointCount(int beginIndex, int endIndex)
-    ensureCapacity(int minimumCapacity)
-    getChars(int srcBegin, int srcEnd, char[] dst, int dstBegin)
-    indexOf(java.lang.String str)
-    indexOf(java.lang.String str, int fromIndex)
-    lastIndexOf(java.lang.String str)
-    lastIndexOf(java.lang.String str, int fromIndex)
-    offsetByCodePoints(int index, int codePointOffset)
-    setCharAt(int index, char ch)
-    setLength(int newLength)
-    subSequence(int start, int end)
-    substring(int start)
-    substring(int start, int end)
   interface Appendable
     append(char c)
     append(java.lang.CharSequence csq)
@@ -21557,8 +21550,14 @@ package java.lang
     append(java.lang.StringBuffer sb)
     append(long lng)
     appendCodePoint(int codePoint)
+    charAt(int index)
+    codePointAt(int index)
+    codePointBefore(int index)
+    codePointCount(int beginIndex, int endIndex)
     delete(int start, int end)
     deleteCharAt(int index)
+    ensureCapacity(int minimumCapacity)
+    getChars(int srcBegin, int srcEnd, char[] dst, int dstBegin)
     indexOf(java.lang.String str)
     indexOf(java.lang.String str, int fromIndex)
     insert(int offset, boolean b)
@@ -21575,10 +21574,16 @@ package java.lang
     insert(int offset, long l)
     lastIndexOf(java.lang.String str)
     lastIndexOf(java.lang.String str, int fromIndex)
+    offsetByCodePoints(int index, int codePointOffset)
     replace(int start, int end, java.lang.String str)
+    setCharAt(int index, char ch)
+    setLength(int newLength)
     #ctor(int capacity)
     #ctor(java.lang.CharSequence seq)
     #ctor(java.lang.String str)
+    subSequence(int start, int end)
+    substring(int start)
+    substring(int start, int end)
   class StringIndexOutOfBoundsException
     #ctor(int index)
     #ctor(java.lang.String s)
@@ -23246,16 +23251,16 @@ package java.security
     #ctor(java.security.CodeSource codesource, java.security.PermissionCollection permissions)
     #ctor(java.security.CodeSource codesource, java.security.PermissionCollection permissions, java.lang.ClassLoader classloader, java.security.Principal[] principals)
   class Provider
-    compute(java.lang.Object key, java.util.function.BiFunction<? super java.lang.Object,? super java.lang.Object,? extends java.lang.Object> remappingFunction)
-    computeIfAbsent(java.lang.Object key, java.util.function.Function<? super java.lang.Object,? extends java.lang.Object> mappingFunction)
-    computeIfPresent(java.lang.Object key, java.util.function.BiFunction<? super java.lang.Object,? super java.lang.Object,? extends java.lang.Object> remappingFunction)
+    compute(java.lang.Object key, java.util.function.BiFunction<? super java.lang.Object,? super java.lang.Object,?> remappingFunction)
+    computeIfAbsent(java.lang.Object key, java.util.function.Function<? super java.lang.Object,?> mappingFunction)
+    computeIfPresent(java.lang.Object key, java.util.function.BiFunction<? super java.lang.Object,? super java.lang.Object,?> remappingFunction)
     forEach(java.util.function.BiConsumer<? super java.lang.Object,? super java.lang.Object> action)
     get(java.lang.Object key)
     getOrDefault(java.lang.Object key, java.lang.Object defaultValue)
     getProperty(java.lang.String key)
     getService(java.lang.String type, java.lang.String algorithm)
     load(java.io.InputStream inStream)
-    merge(java.lang.Object key, java.lang.Object value, java.util.function.BiFunction<? super java.lang.Object,? super java.lang.Object,? extends java.lang.Object> remappingFunction)
+    merge(java.lang.Object key, java.lang.Object value, java.util.function.BiFunction<? super java.lang.Object,? super java.lang.Object,?> remappingFunction)
     #ctor(java.lang.String name, double version, java.lang.String info)
     put(java.lang.Object key, java.lang.Object value)
     putAll(java.util.Map<?,?> t)
@@ -23266,7 +23271,7 @@ package java.security
     removeService(java.security.Provider.Service s)
     replace(java.lang.Object key, java.lang.Object value)
     replace(java.lang.Object key, java.lang.Object oldValue, java.lang.Object newValue)
-    replaceAll(java.util.function.BiFunction<? super java.lang.Object,? super java.lang.Object,? extends java.lang.Object> function)
+    replaceAll(java.util.function.BiFunction<? super java.lang.Object,? super java.lang.Object,?> function)
   class Provider.Service
     getAttribute(java.lang.String name)
     newInstance(java.lang.Object constructorParameter)
@@ -25201,15 +25206,6 @@ package java.time.chrono
     until(java.time.temporal.Temporal endExclusive, java.time.temporal.TemporalUnit unit)
     with(java.time.temporal.TemporalAdjuster adjuster)
     with(java.time.temporal.TemporalField field, long newValue)
-  class ChronoLocalDateImpl<D>
-    equals(java.lang.Object obj)
-    minus(java.time.temporal.TemporalAmount amount)
-    minus(long amountToSubtract, java.time.temporal.TemporalUnit unit)
-    plus(java.time.temporal.TemporalAmount amount)
-    plus(long amountToAdd, java.time.temporal.TemporalUnit unit)
-    until(java.time.temporal.Temporal endExclusive, java.time.temporal.TemporalUnit unit)
-    with(java.time.temporal.TemporalAdjuster adjuster)
-    with(java.time.temporal.TemporalField field, long value)
   interface ChronoLocalDateTime<D>
     adjustInto(java.time.temporal.Temporal temporal)
     atZone(java.time.ZoneId zone)
@@ -25325,6 +25321,7 @@ package java.time.chrono
     plus(long amountToAdd, java.time.temporal.TemporalUnit unit)
     range(java.time.temporal.TemporalField field)
     until(java.time.chrono.ChronoLocalDate endDate)
+    until(java.time.temporal.Temporal endExclusive, java.time.temporal.TemporalUnit unit)
     with(java.time.temporal.TemporalAdjuster adjuster)
     with(java.time.temporal.TemporalField field, long newValue)
     withVariant(java.time.chrono.HijrahChronology chronology)
@@ -25384,6 +25381,7 @@ package java.time.chrono
     plus(long amountToAdd, java.time.temporal.TemporalUnit unit)
     range(java.time.temporal.TemporalField field)
     until(java.time.chrono.ChronoLocalDate endDate)
+    until(java.time.temporal.Temporal endExclusive, java.time.temporal.TemporalUnit unit)
     with(java.time.temporal.TemporalAdjuster adjuster)
     with(java.time.temporal.TemporalField field, long newValue)
   class JapaneseEra
@@ -25421,6 +25419,7 @@ package java.time.chrono
     plus(long amountToAdd, java.time.temporal.TemporalUnit unit)
     range(java.time.temporal.TemporalField field)
     until(java.time.chrono.ChronoLocalDate endDate)
+    until(java.time.temporal.Temporal endExclusive, java.time.temporal.TemporalUnit unit)
     with(java.time.temporal.TemporalAdjuster adjuster)
     with(java.time.temporal.TemporalField field, long newValue)
   class MinguoEra
@@ -25456,6 +25455,7 @@ package java.time.chrono
     plus(long amountToAdd, java.time.temporal.TemporalUnit unit)
     range(java.time.temporal.TemporalField field)
     until(java.time.chrono.ChronoLocalDate endDate)
+    until(java.time.temporal.Temporal endExclusive, java.time.temporal.TemporalUnit unit)
     with(java.time.temporal.TemporalAdjuster adjuster)
     with(java.time.temporal.TemporalField field, long newValue)
   class ThaiBuddhistEra
@@ -27072,20 +27072,17 @@ package java.util.concurrent
     <U> searchEntries(long parallelismThreshold, java.util.function.Function<java.util.Map.Entry<K,V>,? extends U> searchFunction)
     <U> searchKeys(long parallelismThreshold, java.util.function.Function<? super K,? extends U> searchFunction)
     <U> searchValues(long parallelismThreshold, java.util.function.Function<? super V,? extends U> searchFunction)
-  class ConcurrentHashMap.CollectionView<K,V,E>
-    contains(java.lang.Object o)
-    containsAll(java.util.Collection<?> c)
-    remove(java.lang.Object o)
-    removeAll(java.util.Collection<?> c)
-    retainAll(java.util.Collection<?> c)
-    <T> toArray(T[] a)
   class ConcurrentHashMap.KeySetView<K,V>
     add(K e)
     addAll(java.util.Collection<? extends K> c)
     contains(java.lang.Object o)
+    containsAll(java.util.Collection<?> c)
     equals(java.lang.Object o)
     forEach(java.util.function.Consumer<? super K> action)
     remove(java.lang.Object o)
+    removeAll(java.util.Collection<?> c)
+    retainAll(java.util.Collection<?> c)
+    <T> toArray(T[] a)
   class ConcurrentLinkedDeque<E>
     add(E e)
     addAll(java.util.Collection<? extends E> c)
