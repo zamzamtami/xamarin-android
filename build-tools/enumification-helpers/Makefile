@@ -27,7 +27,8 @@ map.ext.csv: generate-const-mapping.exe enum-conversion-mappings.xml const-list-
 	mono --debug generate-const-mapping.exe enum-conversion-mappings.xml const-list-$(API_LEVEL).xml > map.ext.csv || rm map.ext.csv
 
 remaining-int-consts.txt: ../../src/Mono.Android/obj/$(CONFIGURATION)/android-$(API_LEVEL)/mcw/*.cs
-	grep "const int " ../../src/Mono.Android/obj/$(CONFIGURATION)/android-$(API_LEVEL)/mcw/*.cs \
+	find ../../src/Mono.Android/obj/$(CONFIGURATION)/android-$(API_LEVEL)/mcw -name "*.cs" \
+		| xargs grep "const int" \
 		| grep -v Javax.Microedition \
 		| grep -v Dalvik.Bytecode \
 		| grep -v Android.Resource.cs \
@@ -35,6 +36,7 @@ remaining-int-consts.txt: ../../src/Mono.Android/obj/$(CONFIGURATION)/android-$(
 		| grep -v GLES \
 		| grep -v ContentsFileDescriptor \
 		| sed -e 's/android-[0-9]*/android-XXX/' \
+		| sort \
 		> remaining-int-consts.txt
 
 remaining-int-methods-filtered.txt: remaining-int-methods.txt reduction_rules.txt
@@ -42,10 +44,26 @@ remaining-int-methods-filtered.txt: remaining-int-methods.txt reduction_rules.tx
 	grep "int[\[ ]" remaining-int-methods.txt > remaining-int-methods-filtered.txt
 
 remaining-int-methods.txt: $(topdir)/src/Mono.Android/obj/$(CONFIGURATION)/android-$(API_LEVEL)/mcw/*.cs
-	grep "public" $(topdir)/src/Mono.Android/obj/$(CONFIGURATION)/android-$(API_LEVEL)/mcw/*.cs | grep -v "const" | grep "int" | grep "[({]" | grep -v GLES | grep -v Android.R. | grep -v Khronos | sort | sed 's/android-[0-9]*/android-XXX/' > remaining-int-methods.txt
+	find $(topdir)/src/Mono.Android/obj/$(CONFIGURATION)/android-$(API_LEVEL)/mcw -name "*.cs" \
+		| xargs grep "public" \
+		| grep -v "const" \
+		| grep "int" \
+		| grep "[({]" \
+		| grep -v GLES \
+		| grep -v Android.R. \
+		| grep -v Khronos \
+		| sed 's/android-[0-9]*/android-XXX/' \
+		| sort \
+		> remaining-int-methods.txt
 
 clean::
 	-rm -rf tmp.xml const-list-$(API_LEVEL).xml \
-		generate-const-list-2.exe generate-const-list-2.exe.mdb \
-		generate-const-mapping.exe generate-const-mapping.exe.mdb \
-		map.ext.csv intermediate-enum-candidates.xml remaining-int-consts.txt \
+		generate-const-list-2.exe \
+		generate-const-list-2.exe.mdb \
+		generate-const-mapping.exe \
+		generate-const-mapping.exe.mdb \
+		map.ext.csv \
+		intermediate-enum-candidates.xml \
+		remaining-int-methods.txt \
+		remaining-int-consts.txt \
+		remaining-int-methods-filtered.txt
