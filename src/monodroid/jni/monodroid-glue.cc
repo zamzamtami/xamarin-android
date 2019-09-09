@@ -66,8 +66,6 @@
 #include "util.hh"
 #include "debug.hh"
 #include "embedded-assemblies.hh"
-#include "unzip.h"
-#include "ioapi.h"
 #include "monodroid-glue.h"
 #include "mkbundle-api.h"
 #include "monodroid-glue-internal.hh"
@@ -508,18 +506,19 @@ gather_bundled_assemblies (JNIEnv *env, jstring_array_wrapper &runtimeApks, bool
 	}
 #endif
 
+	int64_t apk_count = static_cast<int64_t>(runtimeApks.get_length ());
 	size_t prev_num_assemblies = 0;
-	for (int64_t i = static_cast<int64_t>(runtimeApks.get_length () - 1); i >= 0; --i) {
-		size_t           cur_num_assemblies;
+	for (int64_t i = static_cast<int64_t>(apk_count - 1); i >= 0; --i) {
 		jstring_wrapper &apk_file = runtimeApks [static_cast<size_t>(i)];
 
-		cur_num_assemblies  = embeddedAssemblies.register_from<should_register_file> (apk_file.get_cstr ());
+		size_t cur_num_assemblies  = embeddedAssemblies.register_from<should_register_file> (apk_file.get_cstr (), static_cast<size_t>(apk_count));
 
 		if (strstr (apk_file.get_cstr (), "/Mono.Android.DebugRuntime") == nullptr &&
 		    strstr (apk_file.get_cstr (), "/Mono.Android.Platform.ApiLevel_") == nullptr)
 			*out_user_assemblies_count += (cur_num_assemblies - prev_num_assemblies);
 		prev_num_assemblies = cur_num_assemblies;
 	}
+	embeddedAssemblies.bundled_assemblies_cleanup ();
 }
 
 #if defined (DEBUG) && !defined (WINDOWS)
@@ -1876,7 +1875,7 @@ load_assemblies (MonoDomain *domain, JNIEnv *env, jstring_array_wrapper &assembl
 	}
 }
 
-static void
+[[maybe_unused]] static void
 monodroid_Mono_UnhandledException_internal (MonoException *ex)
 {
 	// Do nothing with it here, we let the exception naturally propagate on the managed side

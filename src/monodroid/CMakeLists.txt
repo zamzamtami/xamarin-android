@@ -246,8 +246,6 @@ set(MONODROID_SOURCES
   ${SOURCES_DIR}/shared-constants.cc
   ${SOURCES_DIR}/timezones.cc
   ${SOURCES_DIR}/util.cc
-  ${SOURCES_DIR}/zip/ioapi.c
-  ${SOURCES_DIR}/zip/unzip.c
   ${JAVA_INTEROP_SRC_PATH}/java-interop.cc
   ${JAVA_INTEROP_SRC_PATH}/java-interop-mono.cc
   ${JAVA_INTEROP_SRC_PATH}/java-interop-util.cc

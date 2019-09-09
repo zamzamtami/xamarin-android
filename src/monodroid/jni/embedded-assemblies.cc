@@ -23,8 +23,9 @@
 #include "globals.hh"
 #include "monodroid-glue.h"
 #include "xamarin-app.h"
+#include "cpp-util.hh"
 
-namespace xamarin { namespace android { namespace internal {
+namespace xamarin::android::internal {
 #if defined (DEBUG) || !defined (ANDROID)
 	struct TypeMappingInfo {
 		char                     *source_apk;
@@ -36,12 +37,36 @@ namespace xamarin { namespace android { namespace internal {
 		TypeMappingInfo          *next;
 	};
 #endif // DEBUG || !ANDROID
-
-	struct md_mmap_info {
-		void   *area;
-		size_t  size;
+	enum class FileType : uint8_t
+	{
+		Unknown,
+		JavaToManagedTypeMap,
+		ManagedToJavaTypeMap,
+		DebugInfo,
+		Config,
+		Assembly,
 	};
-}}}
+
+	struct XamarinBundledAssembly
+	{
+		XamarinBundledAssembly () = default;
+
+		const char *name;
+		const char *apk_name;
+		int         apk_fd;
+		FileType    type;
+		off_t       data_offset;
+		size_t      data_size;
+		size_t      mmap_size;
+		void       *mmap_area;
+		void       *mmap_file_data;
+	};
+
+	// Amount of RAM that is allowed to be left unused ("wasted") in the `bundled_assemblies`
+	// array after all the APK assemblies are loaded. This is to avoid unnecessary `realloc`
+	// calls in order to save time.
+	static constexpr size_t BUNDLED_ASSEMBLIES_EXCESS_ITEMS_LIMIT = 256 * sizeof(XamarinBundledAssembly);
+}
 
 using namespace xamarin::android;
 using namespace xamarin::android::internal;
@@ -52,11 +77,78 @@ const char *EmbeddedAssemblies::suffixes[] = {
 	".exe",
 };
 
+EmbeddedAssemblies::EmbeddedAssemblies ()
+	: system_page_size (monodroid_getpagesize())
+{}
+
 void EmbeddedAssemblies::set_assemblies_prefix (const char *prefix)
 {
 	if (assemblies_prefix_override != nullptr)
 		delete[] assemblies_prefix_override;
 	assemblies_prefix_override = prefix != nullptr ? utils.strdup_new (prefix) : nullptr;
+}
+
+template<typename T>
+T
+EmbeddedAssemblies::get_mmap_file_data (XamarinBundledAssembly& xba)
+{
+	if (xba.mmap_area == nullptr)
+		mmap_apk_file (xba);
+	return static_cast<T>(xba.mmap_file_data);
+}
+
+inline void
+EmbeddedAssemblies::load_assembly_debug_info_from_bundles (const char *aname)
+{
+	if (!register_debug_symbols || !bundled_assemblies_have_debug_info || aname == nullptr)
+		return;
+
+	size_t aname_len = strlen (aname);
+	for (size_t i = 0; i < bundled_assemblies_count; i++) {
+		XamarinBundledAssembly &entry = bundled_assemblies[i];
+		if (entry.type != FileType::DebugInfo)
+			continue;
+
+		// We know the entry has one of the debug info extensions, so we can take this shortcut to
+		// avoid having to allocate memory and use string comparison in order to find a match for
+		// the `aname` assembly
+		if (strncmp (entry.name, aname, aname_len) != 0)
+			continue;
+
+		size_t ext_len = strlen (entry.name) - aname_len;
+		if (ext_len != 4 || ext_len != 8) { // 'Assembly.pdb' || 'Assembly.{exe,dll}.mdb'
+			continue;
+		}
+
+		mono_register_symfile_for_assembly (aname, get_mmap_file_data<const mono_byte*> (entry), static_cast<int> (entry.data_size));
+	}
+}
+
+inline void
+EmbeddedAssemblies::load_assembly_config_from_bundles (const char *aname)
+{
+	static constexpr size_t config_ext_len = sizeof(config_ext) - 1;
+
+	if (!bundled_assemblies_have_configs || aname == nullptr)
+		return;
+
+	size_t aname_len = strlen (aname);
+	for (size_t i = 0; i < bundled_assemblies_count; i++) {
+		XamarinBundledAssembly &entry = bundled_assemblies[i];
+		if (entry.type != FileType::Config)
+			continue;
+
+		// We know the entry has the `.{dll,exe}.config` extension, so we can take this shortcut to
+		// avoid having to allocate memory and use string comparison in order to find a match for
+		// the `aname` assembly
+		if (strncmp (entry.name, aname, aname_len) != 0 ||
+		    strlen (entry.name) - aname_len != config_ext_len) {
+			continue;
+		}
+
+		mono_register_config_for_assembly (aname, get_mmap_file_data <const char*>(entry));
+		break;
+	}
 }
 
 MonoAssembly*
@@ -82,29 +174,39 @@ EmbeddedAssemblies::open_from_bundles (MonoAssemblyName* aname, bool ref_only)
 
 	MonoAssembly *a = nullptr;
 	for (size_t si = 0; si < sizeof (suffixes)/sizeof (suffixes [0]) && a == nullptr; ++si) {
-		MonoBundledAssembly **p;
-
 		*ename = '\0';
 		strcat (name, suffixes [si]);
 
 		log_info (LOG_ASSEMBLY, "open_from_bundles: looking for bundled name: '%s'", name);
 
-		for (p = bundled_assemblies; p != nullptr && *p; ++p) {
-			MonoImage *image = nullptr;
-			MonoImageOpenStatus status;
-			const MonoBundledAssembly *e = *p;
+		for (size_t i = 0; i < bundled_assemblies_count; i++) {
+			XamarinBundledAssembly &assembly = bundled_assemblies[i];
 
-			if (strcmp (e->name, name) == 0 &&
-					(image  = mono_image_open_from_data_with_name ((char*) e->data, e->size, 0, nullptr, ref_only, name)) != nullptr &&
-					(a      = mono_assembly_load_from_full (image, name, &status, ref_only)) != nullptr) {
-				mono_config_for_assembly (image);
+			if (assembly.type != FileType::Assembly || strcmp (assembly.name, name) != 0)
+				continue;
+
+			MonoImage *image = mono_image_open_from_data_with_name (get_mmap_file_data<char*>(assembly), static_cast<uint32_t>(assembly.data_size), 0, nullptr, ref_only, name);
+			if (image == nullptr)
+				break;
+
+			MonoImageOpenStatus status;
+			a = mono_assembly_load_from_full (image, name, &status, ref_only);
+			if (a == nullptr) {
+				mono_image_close (image);
 				break;
 			}
+
+			load_assembly_config_from_bundles (assembly.name);
+			if (!ref_only)
+				load_assembly_debug_info_from_bundles (asmname);
+
+			mono_config_for_assembly (image);
+			break;
 		}
 	}
 	delete[] name;
 
-	if (a && utils.should_log (LOG_ASSEMBLY)) {
+	if (XA_UNLIKELY (utils.should_log (LOG_ASSEMBLY) && a != nullptr)) {
 		log_info_nocheck (LOG_ASSEMBLY, "open_from_bundles: loaded assembly: %p\n", a);
 	}
 	return a;
@@ -256,242 +358,32 @@ EmbeddedAssemblies::add_type_mapping (TypeMappingInfo **info, const char *source
 }
 #endif // DEBUG || !ANDROID
 
-md_mmap_info
-EmbeddedAssemblies::md_mmap_apk_file (int fd, uLong offset, uLong size, const char* filename, const char* apk)
+void
+EmbeddedAssemblies::mmap_apk_file (XamarinBundledAssembly& xba)
 {
-	md_mmap_info file_info;
-	md_mmap_info mmap_info;
+	if (xba.mmap_area != nullptr)
+		return; // already mapped
 
-	size_t pageSize       = static_cast<size_t>(monodroid_getpagesize());
-	uLong offsetFromPage  = static_cast<uLong>(offset % pageSize);
-	uLong offsetPage      = offset - offsetFromPage;
-	uLong offsetSize      = size + offsetFromPage;
+	assert (xba.apk_fd >= 0 && "APK file descriptor must be set!");
 
-	mmap_info.area        = mmap (nullptr, offsetSize, PROT_READ, MAP_PRIVATE, fd, static_cast<off_t>(offsetPage));
+	auto pageSize       = static_cast<size_t>(system_page_size);
+	auto offsetFromPage = static_cast<off_t>(static_cast<size_t>(xba.data_offset) % pageSize);
+	off_t offsetPage    = xba.data_offset - offsetFromPage;
+	size_t offsetSize   = xba.data_size + static_cast<size_t>(offsetFromPage);
 
-	if (mmap_info.area == MAP_FAILED) {
-		log_fatal (LOG_DEFAULT, "Could not `mmap` apk `%s` entry `%s`: %s", apk, filename, strerror (errno));
+	xba.mmap_area        = mmap (nullptr, offsetSize, PROT_READ, MAP_PRIVATE, xba.apk_fd, offsetPage);
+
+	if (xba.mmap_area == MAP_FAILED) {
+		log_fatal (LOG_DEFAULT, "Could not `mmap` apk `%s` entry `%s`: %s", xba.apk_name, xba.name, strerror (errno));
 		exit (FATAL_EXIT_CANNOT_FIND_APK);
 	}
 
-	mmap_info.size  = offsetSize;
-	file_info.area  = (void*)((const char*)mmap_info.area + offsetFromPage);
-	file_info.size  = size;
+	xba.mmap_size = offsetSize;
+	xba.mmap_file_data = static_cast<void*>(static_cast<uint8_t*>(xba.mmap_area) + offsetFromPage);
 
 	log_info (LOG_ASSEMBLY, "                       mmap_start: %08p  mmap_end: %08p  mmap_len: % 12u  file_start: %08p  file_end: %08p  file_len: % 12u      apk: %s  file: %s",
-			mmap_info.area, reinterpret_cast<int*> (mmap_info.area) + mmap_info.size, (unsigned int) mmap_info.size,
-			file_info.area, reinterpret_cast<int*> (file_info.area) + file_info.size, (unsigned int) file_info.size, apk, filename);
-
-	return file_info;
-}
-
-void*
-EmbeddedAssemblies::md_mmap_open_file (UNUSED_ARG void *opaque, UNUSED_ARG const char *filename, int mode)
-{
-	if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER) == ZLIB_FILEFUNC_MODE_READ)
-		return utils.xcalloc (1, sizeof (int));
-	return nullptr;
-}
-
-uLong
-EmbeddedAssemblies::md_mmap_read_file (void *opaque, UNUSED_ARG void *stream, void *buf, uLong size)
-{
-	int fd = *reinterpret_cast<int*>(opaque);
-	return static_cast<uLong>(read (fd, buf, size));
-}
-
-long
-EmbeddedAssemblies::md_mmap_tell_file (void *opaque, UNUSED_ARG void *stream)
-{
-	int fd = *reinterpret_cast<int*>(opaque);
-	return lseek (fd, 0, SEEK_CUR);
-}
-
-long
-EmbeddedAssemblies::md_mmap_seek_file (void *opaque, UNUSED_ARG void *stream, uLong __offset, int origin)
-{
-	int fd = *reinterpret_cast<int*>(opaque);
-	off_t offset = static_cast<off_t>(__offset);
-
-	switch (origin) {
-	case ZLIB_FILEFUNC_SEEK_END:
-		lseek (fd, offset, SEEK_END);
-		break;
-	case ZLIB_FILEFUNC_SEEK_CUR:
-		lseek (fd, offset, SEEK_CUR);
-		break;
-	case ZLIB_FILEFUNC_SEEK_SET:
-		lseek (fd, offset, SEEK_SET);
-		break;
-	default:
-		return -1;
-	}
-	return 0;
-}
-
-int
-EmbeddedAssemblies::md_mmap_close_file (UNUSED_ARG void *opaque, void *stream)
-{
-	free (stream);
-	return 0;
-}
-
-int
-EmbeddedAssemblies::md_mmap_error_file (UNUSED_ARG void *opaque, UNUSED_ARG void *stream)
-{
-	return 0;
-}
-
-bool
-EmbeddedAssemblies::register_debug_symbols_for_assembly (const char *entry_name, MonoBundledAssembly *assembly, const mono_byte *debug_contents, int debug_size)
-{
-	const char *entry_basename  = strrchr (entry_name, '/') + 1;
-	// System.dll, System.dll.mdb case
-	if (strncmp (assembly->name, entry_basename, strlen (assembly->name)) != 0) {
-		// That failed; try for System.dll, System.pdb case
-		const char *eb_ext  = strrchr (entry_basename, '.');
-		if (eb_ext == nullptr)
-			return false;
-		off_t basename_len    = static_cast<off_t>(eb_ext - entry_basename);
-		assert (basename_len > 0 && "basename must have a length!");
-		if (strncmp (assembly->name, entry_basename, static_cast<size_t>(basename_len)) != 0)
-			return false;
-	}
-
-	mono_register_symfile_for_assembly (assembly->name, debug_contents, debug_size);
-
-	return true;
-}
-
-bool
-EmbeddedAssemblies::gather_bundled_assemblies_from_apk (const char* apk, monodroid_should_register should_register)
-{
-	int fd;
-	unzFile file;
-
-	zlib_filefunc_def funcs = {
-		md_mmap_open_file,  // zopen_file,
-		md_mmap_read_file,  // zread_file,
-		nullptr,            // zwrite_file,
-		md_mmap_tell_file,  // ztell_file,
-		md_mmap_seek_file,  // zseek_file,
-		md_mmap_close_file, // zclose_file
-		md_mmap_error_file, // zerror_file
-		nullptr             // opaque
-	};
-
-	if ((fd = open (apk, O_RDONLY)) < 0) {
-		log_error (LOG_DEFAULT, "ERROR: Unable to load application package %s.", apk);
-		return false;
-	}
-
-	funcs.opaque = &fd;
-
-	if ((file = unzOpen2 (nullptr, &funcs)) != nullptr) {
-		do {
-			unz_file_info info;
-			uLong offset;
-			unsigned int *psize;
-			char cur_entry_name [256];
-			MonoBundledAssembly *cur;
-
-			cur_entry_name [0] = 0;
-			if (unzGetCurrentFileInfo (file, &info, cur_entry_name, sizeof (cur_entry_name)-1, nullptr, 0, nullptr, 0) != UNZ_OK ||
-					info.compression_method != 0 ||
-					unzOpenCurrentFile3 (file, nullptr, nullptr, 1, nullptr) != UNZ_OK ||
-					unzGetRawFileOffset (file, &offset) != UNZ_OK) {
-				continue;
-			}
-
-#if defined (DEBUG)
-			if (utils.ends_with (cur_entry_name, ".jm")) {
-				md_mmap_info map_info   = md_mmap_apk_file (fd, offset, info.uncompressed_size, cur_entry_name, apk);
-				add_type_mapping (&java_to_managed_maps, apk, cur_entry_name, (const char*)map_info.area);
-				continue;
-			}
-			if (utils.ends_with (cur_entry_name, ".mj")) {
-				md_mmap_info map_info   = md_mmap_apk_file (fd, offset, info.uncompressed_size, cur_entry_name, apk);
-				add_type_mapping (&managed_to_java_maps, apk, cur_entry_name, (const char*)map_info.area);
-				continue;
-			}
-#endif
-
-			const char *prefix = get_assemblies_prefix();
-			if (strncmp (prefix, cur_entry_name, strlen (prefix)) != 0)
-				continue;
-
-			// assemblies must be 4-byte aligned, or Bad Things happen
-			if ((offset & 0x3) != 0) {
-				log_fatal (LOG_ASSEMBLY, "Assembly '%s' is located at bad offset %lu within the .apk\n", cur_entry_name,
-						offset);
-				log_fatal (LOG_ASSEMBLY, "You MUST run `zipalign` on %s\n", strrchr (apk, '/') + 1);
-				exit (FATAL_EXIT_MISSING_ZIPALIGN);
-			}
-
-			bool entry_is_overridden = !should_register (strrchr (cur_entry_name, '/') + 1);
-
-			if ((utils.ends_with (cur_entry_name, ".mdb") || utils.ends_with (cur_entry_name, ".pdb")) &&
-					register_debug_symbols &&
-					!entry_is_overridden &&
-					bundled_assemblies != nullptr) {
-				md_mmap_info map_info = md_mmap_apk_file(fd, offset, info.uncompressed_size, cur_entry_name, apk);
-				if (register_debug_symbols_for_assembly (cur_entry_name, (bundled_assemblies) [bundled_assemblies_count - 1],
-						(const mono_byte*)map_info.area,
-				        static_cast<int>(info.uncompressed_size)))
-					continue;
-			}
-
-			if (utils.ends_with (cur_entry_name, ".config") && bundled_assemblies != nullptr) {
-				char *assembly_name = strdup (basename (cur_entry_name));
-				// Remove '.config' suffix
-				*strrchr (assembly_name, '.') = '\0';
-
-				md_mmap_info map_info = md_mmap_apk_file(fd, offset, info.uncompressed_size, cur_entry_name, apk);
-				mono_register_config_for_assembly (assembly_name, (const char*)map_info.area);
-
-				continue;
-			}
-
-			if (!(utils.ends_with (cur_entry_name, ".dll") || utils.ends_with (cur_entry_name, ".exe")))
-				continue;
-
-			if (entry_is_overridden)
-				continue;
-
-			size_t alloc_size = MULTIPLY_WITH_OVERFLOW_CHECK (size_t, sizeof(void*), bundled_assemblies_count + 1);
-			bundled_assemblies = reinterpret_cast<MonoBundledAssembly**> (utils.xrealloc (bundled_assemblies, alloc_size));
-			cur = bundled_assemblies [bundled_assemblies_count] = reinterpret_cast<MonoBundledAssembly*> (utils.xcalloc (1, sizeof (MonoBundledAssembly)));
-			++bundled_assemblies_count;
-
-			md_mmap_info map_info = md_mmap_apk_file (fd, offset, info.uncompressed_size, cur_entry_name, apk);
-			cur->name = utils.monodroid_strdup_printf ("%s", strstr (cur_entry_name, prefix) + strlen (prefix));
-			cur->data = (const unsigned char*)map_info.area;
-
-			// MonoBundledAssembly::size is const?!
-			psize = (unsigned int*) &cur->size;
-			*psize = static_cast<unsigned int>(info.uncompressed_size);
-
-			if (utils.should_log (LOG_ASSEMBLY)) {
-				const char *p = (const char*) cur->data;
-
-				char header[9];
-				for (size_t i = 0; i < sizeof(header)-1; ++i)
-					header[i] = isprint (p [i]) ? p [i] : '.';
-				header [sizeof(header)-1] = '\0';
-
-				log_info_nocheck (LOG_ASSEMBLY, "file-offset: % 8x  start: %08p  end: %08p  len: % 12i  zip-entry:  %s name: %s [%s]",
-						(int) offset, cur->data, cur->data + *psize, (int) info.uncompressed_size, cur_entry_name, cur->name, header);
-			}
-
-			unzCloseCurrentFile (file);
-
-		} while (unzGoToNextFile (file) == UNZ_OK);
-		unzClose (file);
-	}
-
-	close(fd);
-
-	return true;
+	          xba.mmap_area, reinterpret_cast<uint8_t*> (xba.mmap_area) + xba.mmap_size, static_cast<uint32_t>(xba.mmap_size),
+	          xba.mmap_file_data, reinterpret_cast<int*> (xba.mmap_file_data) + xba.data_size, static_cast<uint32_t> (xba.data_size), xba.apk_name, xba.name);
 }
 
 #if defined (DEBUG) || !defined (ANDROID)
@@ -543,21 +435,492 @@ EmbeddedAssemblies::try_load_typemaps_from_directory (const char *path)
 #endif
 
 size_t
-EmbeddedAssemblies::register_from (const char *apk_file, monodroid_should_register should_register)
+EmbeddedAssemblies::register_from (const char *apk_file, size_t total_apk_count, monodroid_should_register should_register)
 {
-	size_t prev  = bundled_assemblies_count;
+	int fd;
 
-	gather_bundled_assemblies_from_apk (apk_file, should_register);
+	if ((fd = open (apk_file, O_RDONLY)) < 0) {
+		log_error (LOG_DEFAULT, "ERROR: Unable to load application package %s. %s", apk_file, strerror (errno));
+		return bundled_assemblies_count;
+	}
+
+	size_t prev  = bundled_assemblies_count;
+	if (!zip_load_entries (fd, apk_file, total_apk_count, should_register)) {
+		close (fd);
+		return bundled_assemblies_count;
+	}
 
 	log_info (LOG_ASSEMBLY, "Package '%s' contains %i assemblies", apk_file, bundled_assemblies_count - prev);
 
-	if (bundled_assemblies) {
-		size_t alloc_size = MULTIPLY_WITH_OVERFLOW_CHECK (size_t, sizeof(void*), bundled_assemblies_count + 1);
-		bundled_assemblies  = reinterpret_cast <MonoBundledAssembly**> (utils.xrealloc (bundled_assemblies, alloc_size));
-		bundled_assemblies [bundled_assemblies_count] = nullptr;
+	return bundled_assemblies_count;
+}
+
+inline void
+EmbeddedAssemblies::resize_bundled_assemblies (size_t new_size)
+{
+	assert (new_size >= bundled_assemblies_count && "Shrinking bundled_assemblies would lose data");
+
+	auto new_array = new XamarinBundledAssembly[new_size];
+
+	// We can safely do this because XamarinBundledAssembly is POD (Plain Old Data) and we don't
+	// need to worry about copy constructors and destructors
+	if (bundled_assemblies_count > 0) {
+		memcpy (new_array, bundled_assemblies, bundled_assemblies_count * sizeof(XamarinBundledAssembly));
 	}
 
-	return bundled_assemblies_count;
+	delete[] bundled_assemblies;
+	bundled_assemblies = new_array;
+	bundled_assemblies_size = new_size;
+}
+
+void
+EmbeddedAssemblies::bundled_assemblies_cleanup ()
+{
+	if (bundled_assemblies_size - bundled_assemblies_count <= BUNDLED_ASSEMBLIES_EXCESS_ITEMS_LIMIT) {
+		return;
+	}
+
+	resize_bundled_assemblies (bundled_assemblies_count);
+}
+
+bool
+EmbeddedAssemblies::zip_load_entries (int fd, const char *apk_name, size_t total_apk_count, monodroid_should_register should_register)
+{
+	uint32_t cd_offset;
+	uint32_t cd_size;
+	uint16_t cd_entries;
+
+	if (!zip_read_cd_info (fd, cd_offset, cd_size, cd_entries)) {
+		log_fatal (LOG_DEFAULT,  "Failed to read the EOCD record from APK file %s", apk_name);
+		return false;
+	}
+#ifdef DEBUG
+	log_info (LOG_DEFAULT, "Central directory offset: %u", cd_offset);
+	log_info (LOG_DEFAULT, "Central directory size: %u", cd_size);
+	log_info (LOG_DEFAULT, "Central directory entries: %u", cd_entries);
+#endif
+	off_t result = ::lseek (fd, static_cast<off_t>(cd_offset), SEEK_SET);
+	if (result < 0) {
+		log_fatal (LOG_DEFAULT, "Failed to seek to central directory position in the APK file %s", apk_name);
+		return false;
+	}
+
+	if (bundled_assemblies == nullptr) {
+		bundled_assemblies_count = 0;
+		bundled_assemblies_size = MULTIPLY_WITH_OVERFLOW_CHECK (size_t, cd_entries, total_apk_count);
+		bundled_assemblies = new XamarinBundledAssembly[bundled_assemblies_size];
+	} else if (bundled_assemblies_size - bundled_assemblies_count <= cd_entries) {
+		resize_bundled_assemblies (ADD_WITH_OVERFLOW_CHECK (size_t, bundled_assemblies_size, cd_entries << 1));
+	}
+
+	// C++17 allows template parameter type inference, but alas, Apple's antiquated compiler does
+	// not support this particular part of the spec...
+	simple_pointer_guard<uint8_t[]>  buf (new uint8_t[cd_size]);
+	const char           *apk        = nullptr;
+	const char           *prefix     = get_assemblies_prefix ();
+	size_t                prefix_len = strlen (prefix);
+	size_t                buf_offset = 0;
+	uint16_t              compression_method;
+	uint32_t              local_header_offset;
+	uint32_t              data_offset;
+	uint32_t              file_size;
+	char                 *entry_name;
+	char                 *file_name;
+
+	ssize_t nread = read (fd, buf.get (), cd_size);
+	if (static_cast<size_t>(nread) != cd_size) {
+		log_fatal (LOG_DEFAULT, "Failed to read Central Directory from the APK archive %s", apk_name);
+		return false;
+	}
+
+	for (size_t i = 0; i < cd_entries; i++) {
+		bool result = zip_read_entry_info (buf.get (), cd_size, buf_offset, compression_method, local_header_offset, file_size, entry_name);
+		simple_pointer_guard<char> entry_name_guard = entry_name;
+		file_name = entry_name_guard.get ();
+
+		if (!result) {
+			log_fatal (LOG_DEFAULT, "Failed to read Central Directory info for entry %u in APK file %s", i, apk_name);
+			return false;
+		}
+
+		if (!zip_adjust_data_offset (fd, local_header_offset, data_offset)) {
+			log_fatal (LOG_DEFAULT, "Failed to adjust data start offset for entry %u in APK file %s", i, apk_name);
+			return false;
+		}
+
+		if (compression_method != 0)
+			continue;
+
+		if (strncmp (prefix, file_name, strlen (prefix)) != 0)
+			continue;
+
+		// assemblies must be 4-byte aligned, or Bad Things happen
+		if ((data_offset & 0x3) != 0) {
+			log_fatal (LOG_ASSEMBLY, "Assembly '%s' is located at bad offset %lu within the .apk\n", file_name, data_offset);
+			log_fatal (LOG_ASSEMBLY, "You MUST run `zipalign` on %s\n", strrchr (apk_name, '/') + 1);
+			exit (FATAL_EXIT_MISSING_ZIPALIGN);
+		}
+
+		FileType type = FileType::Unknown;
+		bool entry_is_overridden = !should_register (strrchr (file_name, '/') + 1);
+
+#if defined (DEBUG)
+		bool mmap_now = false;
+
+		if (utils.ends_with (file_name, ".jm")) {
+			mmap_now = true;
+			type = FileType::JavaToManagedTypeMap;
+		} else if (utils.ends_with (file_name, ".mj")) {
+			mmap_now = true;
+			type = FileType::ManagedToJavaTypeMap;
+		} else
+#endif
+		if (utils.ends_with (file_name, mdb_ext) || utils.ends_with (file_name, pdb_ext)) {
+			if (!register_debug_symbols || entry_is_overridden) {
+				continue;
+			}
+
+			type = FileType::DebugInfo;
+			bundled_assemblies_have_debug_info = true;
+		} else if (utils.ends_with (file_name, config_ext)) {
+			type = FileType::Config;
+			bundled_assemblies_have_configs = true;
+		} else if (utils.ends_with (file_name, ".dll") || utils.ends_with (file_name, ".exe")) {
+			type = FileType::Assembly;
+		} else
+			continue;
+
+		if (entry_is_overridden)
+			continue;
+
+		if (apk == nullptr)
+			apk = utils.strdup_new (apk_name);
+
+		XamarinBundledAssembly &assembly = bundled_assemblies [bundled_assemblies_count++];
+		assembly.name           = utils.strdup_new (strstr (file_name, prefix) + prefix_len);
+		assembly.apk_name       = apk;
+		assembly.apk_fd         = fd;
+		assembly.type           = type;
+		assembly.data_offset    = static_cast<off_t>(data_offset);
+		assembly.data_size      = file_size;
+#if DEBUG
+		if (!mmap_now) {
+#endif
+			assembly.mmap_size      = 0;
+			assembly.mmap_area      = nullptr;
+			assembly.mmap_file_data = nullptr;
+#ifdef DEBUG
+			continue;
+		}
+
+		switch (type) {
+			case FileType::JavaToManagedTypeMap:
+				mmap_apk_file (assembly);
+				add_type_mapping (&java_to_managed_maps, assembly.apk_name, file_name, static_cast<const char*> (assembly.mmap_file_data));
+				bundled_assemblies_count--; // Save on space in `bundled_assemblies` and a bit of
+											// time when traversing the array during on-demand loads
+				break;
+
+			case FileType::ManagedToJavaTypeMap:
+				mmap_apk_file (assembly);
+				add_type_mapping (&managed_to_java_maps, assembly.apk_name, file_name, static_cast<const char*> (assembly.mmap_file_data));
+				bundled_assemblies_count--; // As above
+				break;
+
+			default:
+				log_fatal (LOG_DEFAULT, "Internal error: unsupported file type %f for immediate mapping", type);
+				return false;
+		}
+#endif
+	}
+
+	return true;
+}
+
+bool
+EmbeddedAssemblies::zip_read_cd_info (int fd, uint32_t& cd_offset, uint32_t& cd_size, uint16_t& cd_entries)
+{
+	// The simplest case - no file comment
+	off_t ret = ::lseek (fd, -ZIP_EOCD_LEN, SEEK_END);
+	if (ret < 0) {
+		log_fatal (LOG_DEFAULT, "Unable to seek into the APK to find ECOD: %s", std::strerror (errno));
+		return false;
+	}
+
+	uint8_t eocd[ZIP_EOCD_LEN];
+	ssize_t nread = ::read (fd, eocd, static_cast<size_t>(ZIP_EOCD_LEN));
+	if (nread < 0 || nread != ZIP_EOCD_LEN) {
+		log_fatal (LOG_DEFAULT, "Failed to read EOCD from the APK: %s", std::strerror (errno));
+		return false;
+	}
+
+	size_t index = 0; // signature
+	uint8_t signature[4];
+
+	if (!zip_read_field (eocd, ZIP_EOCD_LEN, index, signature)) {
+		log_fatal (LOG_DEFAULT, "Failed to read EOCD signature");
+		return false;
+	}
+
+	if (memcmp (signature, ZIP_EOCD_MAGIC, sizeof(signature)) == 0) {
+		return zip_extract_cd_info (eocd, ZIP_EOCD_LEN, cd_offset, cd_size, cd_entries);
+	}
+
+	// Most probably a ZIP with comment
+	size_t alloc_size = 65535 + ZIP_EOCD_LEN; // 64k is the biggest comment size allowed
+	ret = lseek (fd, static_cast<off_t>(-alloc_size), SEEK_END);
+	if (ret < 0) {
+		log_fatal (LOG_DEFAULT, "Unable to seek into the file to find ECOD before APK comment: ", std::strerror (errno));
+		return false;
+	}
+
+	auto buf = new uint8_t[alloc_size];
+	nread = ::read (fd, buf, alloc_size);
+
+	if (nread < 0 || static_cast<size_t>(nread) != alloc_size) {
+		log_fatal (LOG_DEFAULT, "Failed to read EOCD and comment from the APK: ", std::strerror (errno));
+		return false;
+	}
+
+	// We scan from the end to save time
+	bool found = false;
+	for (ssize_t i = static_cast<ssize_t>(alloc_size - (ZIP_EOCD_LEN + 2)); i >= 0; i--) {
+		if (memcmp (buf + i, ZIP_EOCD_MAGIC, sizeof(ZIP_EOCD_MAGIC)) != 0)
+			continue;
+
+		found = true;
+		memcpy (eocd, buf + i, ZIP_EOCD_LEN);
+		break;
+	}
+
+	delete[] buf;
+	if (!found) {
+		log_fatal (LOG_DEFAULT, "Unable to find EOCD in the APK (with comment)");
+		return false;
+	}
+
+	return zip_extract_cd_info (eocd, ZIP_EOCD_LEN, cd_offset, cd_size, cd_entries);
+}
+
+bool
+EmbeddedAssemblies::zip_adjust_data_offset (int fd, size_t local_header_offset, uint32_t &data_start_offset)
+{
+	static constexpr size_t LH_FILE_NAME_LENGTH_OFFSET   = 26;
+	static constexpr size_t LH_EXTRA_LENGTH_OFFSET       = 28;
+
+	off_t result = ::lseek (fd, static_cast<off_t>(local_header_offset), SEEK_SET);
+	if (result < 0) {
+		log_fatal (LOG_DEFAULT, "Failed to seek to archive entry local header at offset %u", local_header_offset);
+		return false;
+	}
+
+	uint8_t local_header[ZIP_LOCAL_LEN];
+	uint8_t signature[4];
+
+	ssize_t nread = ::read (fd, local_header, static_cast<size_t>(ZIP_LOCAL_LEN));
+	if (nread < 0 || nread != ZIP_LOCAL_LEN) {
+		log_fatal (LOG_DEFAULT, "Failed to read local header at offset %u: ", local_header_offset, std::strerror (errno));
+		return false;
+	}
+
+	size_t index = 0;
+	if (!zip_read_field (local_header, ZIP_LOCAL_LEN, index, signature)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Local Header entry signature at offset %u", local_header_offset);
+		return false;
+	}
+
+	if (memcmp (signature, ZIP_LOCAL_MAGIC, sizeof(signature)) != 0) {
+		log_fatal (LOG_DEFAULT, "Invalid Local Header entry signature at offset %u", local_header_offset);
+		return false;
+	}
+
+	uint16_t file_name_length;
+	index = LH_FILE_NAME_LENGTH_OFFSET;
+	if (!zip_read_field (local_header, ZIP_LOCAL_LEN, index, file_name_length)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Local Header 'file name length' field at offset %u", (local_header_offset + index));
+		return false;
+	}
+
+	uint16_t extra_field_length;
+	index = LH_EXTRA_LENGTH_OFFSET;
+	if (!zip_read_field (local_header, ZIP_LOCAL_LEN, index, extra_field_length)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Local Header 'extra field length' field at offset %u", (local_header_offset + index));
+		return false;
+	}
+
+	data_start_offset = static_cast<uint32_t>(local_header_offset) + file_name_length + extra_field_length + ZIP_LOCAL_LEN;
+
+	return true;
+}
+
+bool
+EmbeddedAssemblies::zip_extract_cd_info (uint8_t* buf, size_t buf_len, uint32_t& cd_offset, uint32_t& cd_size, uint16_t& cd_entries)
+{
+	static constexpr size_t EOCD_TOTAL_ENTRIES_OFFSET = 10;
+	static constexpr size_t EOCD_CD_SIZE_OFFSET       = 12;
+	static constexpr size_t EOCD_CD_START_OFFSET      = 16;
+
+	if (buf_len < ZIP_EOCD_LEN) {
+		log_fatal (LOG_DEFAULT, "Buffer to short for EOCD");
+		return false;
+	}
+
+	if (!zip_read_field (buf, buf_len, EOCD_TOTAL_ENTRIES_OFFSET, cd_entries)) {
+		log_fatal (LOG_DEFAULT, "Failed to read EOCD 'total number of entries' field");
+		return false;
+	}
+
+	if (!zip_read_field (buf, buf_len, EOCD_CD_START_OFFSET, cd_offset)) {
+		log_fatal (LOG_DEFAULT, "Failed to read EOCD 'central directory size' field");
+		return false;
+	}
+
+	if (!zip_read_field (buf, buf_len, EOCD_CD_SIZE_OFFSET, cd_size)) {
+		log_fatal (LOG_DEFAULT, "Failed to read EOCD 'central directory offset' field");
+		return false;
+	}
+
+	return true;
+}
+
+bool
+EmbeddedAssemblies::zip_ensure_valid_params (uint8_t* buf, size_t buf_len, size_t index, size_t to_read)
+{
+	assert (buf != nullptr);
+	if (index + to_read > buf_len) {
+		log_fatal (LOG_DEFAULT, "Buffer too short to read %u bytes of data", to_read);
+		return false;
+	}
+
+	return true;
+}
+
+bool
+EmbeddedAssemblies::zip_read_field (uint8_t* buf, size_t buf_len, size_t index, uint16_t& u)
+{
+	if (!zip_ensure_valid_params (buf, buf_len, index, sizeof (u)))
+		return false;
+
+	u = static_cast<uint16_t> (buf [index + 1] << 8) |
+		static_cast<uint16_t> (buf [index]);
+
+	return true;
+}
+
+bool
+EmbeddedAssemblies::zip_read_field (uint8_t* buf, size_t buf_len, size_t index, uint32_t& u)
+{
+	if (!zip_ensure_valid_params (buf, buf_len, index, sizeof (u)))
+		return false;
+
+	u = (static_cast<uint32_t> (buf [index + 3]) << 24) |
+		(static_cast<uint32_t> (buf [index + 2]) << 16) |
+		(static_cast<uint32_t> (buf [index + 1]) << 8)  |
+		(static_cast<uint32_t> (buf [index + 0]));
+
+	return true;
+}
+
+bool
+EmbeddedAssemblies::zip_read_field (uint8_t* buf, size_t buf_len, size_t index, uint8_t (&sig)[4])
+{
+	static constexpr size_t sig_size = sizeof(sig);
+
+	if (!zip_ensure_valid_params (buf, buf_len, index, sig_size))
+		return false;
+
+	memcpy (sig, buf + index, sig_size);
+	return true;
+}
+
+bool
+EmbeddedAssemblies::zip_read_field (uint8_t* buf, size_t buf_len, size_t index, size_t count, char*& characters)
+{
+	if (!zip_ensure_valid_params (buf, buf_len, index, count))
+		return false;
+
+	characters = new char[count + 1];
+	memcpy (characters, buf + index, count);
+	characters [count] = '\0';
+
+	return true;
+}
+
+bool
+EmbeddedAssemblies::zip_read_entry_info (uint8_t* buf, size_t buf_len, size_t& buf_offset, uint16_t& compression_method, uint32_t& local_header_offset, uint32_t& file_size, char*& file_name)
+{
+	static constexpr size_t CD_COMPRESSION_METHOD_OFFSET = 10;
+	static constexpr size_t CD_UNCOMPRESSED_SIZE_OFFSET  = 24;
+	static constexpr size_t CD_FILENAME_LENGTH_OFFSET    = 28;
+	static constexpr size_t CD_EXTRA_LENGTH_OFFSET       = 30;
+	static constexpr size_t CD_COMMENT_LENGTH_OFFSET     = 32;
+	static constexpr size_t CD_LOCAL_HEADER_POS_OFFSET   = 42;
+
+	size_t index = buf_offset;
+	if (!zip_ensure_valid_params (buf, buf_len, index, ZIP_CENTRAL_LEN))
+		return false;
+
+	uint8_t signature[4];
+	if (!zip_read_field (buf, buf_len, index, signature)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Central Directory entry signature");
+		return false;
+	}
+
+	if (memcmp (signature, ZIP_CENTRAL_MAGIC, sizeof(signature)) != 0) {
+		log_fatal (LOG_DEFAULT, "Invalid Central Directory entry signature");
+		return false;
+	}
+
+	index = buf_offset + CD_COMPRESSION_METHOD_OFFSET;
+	if (!zip_read_field (buf, buf_len, index, compression_method)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Central Directory entry 'compression method' field");
+		return false;
+	}
+
+	index = buf_offset + CD_UNCOMPRESSED_SIZE_OFFSET;;
+	if (!zip_read_field (buf, buf_len, index, file_size)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Central Directory entry 'uncompressed size' field");
+		return false;
+	}
+
+	uint16_t file_name_length;
+	index = buf_offset + CD_FILENAME_LENGTH_OFFSET;
+	if (!zip_read_field (buf, buf_len, index, file_name_length)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Central Directory entry 'file name length' field");
+		return false;
+	}
+
+	uint16_t extra_field_length;
+	index = buf_offset + CD_EXTRA_LENGTH_OFFSET;
+	if (!zip_read_field (buf, buf_len, index, extra_field_length)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Central Directory entry 'extra field length' field");
+		return false;
+	}
+
+	uint16_t comment_length;
+	index = buf_offset + CD_COMMENT_LENGTH_OFFSET;
+	if (!zip_read_field (buf, buf_len, index, comment_length)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Central Directory entry 'file comment length' field");
+		return false;
+	}
+
+	index = buf_offset + CD_LOCAL_HEADER_POS_OFFSET;
+	if (!zip_read_field (buf, buf_len, index, local_header_offset)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Central Directory entry 'relative offset of local header' field");
+		return false;
+	}
+	index += sizeof(local_header_offset);
+
+	if (file_name_length == 0) {
+		file_name = new char[1];
+		file_name[0] = '\0';
+	} else if (!zip_read_field (buf, buf_len, index, file_name_length, file_name)) {
+		log_fatal (LOG_DEFAULT, "Failed to read Central Directory entry 'file name' field");
+		return false;
+	}
+
+	buf_offset += ZIP_CENTRAL_LEN + file_name_length + extra_field_length + comment_length;
+	return true;
 }
 
 MONO_API int monodroid_embedded_assemblies_set_assemblies_prefix (const char *prefix)

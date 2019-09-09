@@ -20,7 +20,6 @@
 #include <shlwapi.h>
 #endif
 
-#include "unzip.h"
 #include "globals.hh"
 #include "android-system.hh"
 #include "monodroid.h"
