@@ -240,6 +240,7 @@ namespace Java.Interop {
 		{
 			Type type = null;
 			IntPtr class_ptr = JNIEnv.GetObjectClass (handle);
+			Console.WriteLine ($"# jonp: GetObjectClass({handle.ToString("x")}) => {class_ptr.ToString ("x")}");
 			string class_name = GetClassName (class_ptr);
 			lock (jniToManaged) {
 				while (class_ptr != IntPtr.Zero && !jniToManaged.TryGetValue (class_name, out type)) {
@@ -251,6 +252,7 @@ namespace Java.Interop {
 					}
 
 					IntPtr super_class_ptr = JNIEnv.GetSuperclass (class_ptr);
+					Console.WriteLine ($"# jonp: GetSuperclass({class_ptr.ToString("x")}) /* of {class_name} */ => {super_class_ptr.ToString ("x")}");
 					JNIEnv.DeleteLocalRef (class_ptr);
 					class_ptr = super_class_ptr;
 					class_name = GetClassName (class_ptr);
