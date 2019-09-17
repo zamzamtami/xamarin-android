@@ -97,6 +97,7 @@ namespace Xamarin.Android.Build.Tests
 			if (!HasDevices)
 				Assert.Ignore ("Skipping Test. No devices available.");
 
+			RunAdbCommand ($"shell setprop debug.mono.log lref-,gref-");
 			RunAdbCommand ($"shell su root setprop persist.sys.timezone \"{timeZone}\"");
 			ClearAdbLogcat ();
 			AdbStartActivity ($"{proj.PackageName}/md52d9cf6333b8e95e8683a477bc589eda5.MainActivity");
