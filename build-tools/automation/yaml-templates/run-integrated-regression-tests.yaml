@@ -4,7 +4,7 @@ steps:
 - script: |
     git clone -q https://github.com/xamarin/monodroid-samples.git
     git clone -q https://github.com/xamarin/xamarin-forms-samples.git
-    git clone -q https://$(GitHub.Token)@github.com/xamarin/QualityAssurance.git
+    git clone -q https://$(GitHub.Token)@github.com/xamarin/QualityAssurance.git --branch update-support-libraries
   displayName: clone test dependencies
 
 - task: DownloadBuildArtifacts@0
