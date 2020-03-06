@@ -499,8 +499,8 @@ namespace Xamarin.Android.Tasks
 					// include the sgen
 					AddNativeLibrary (apk, abi, "libmonosgen-2.0.so");
 				}
-				AddBtlsLibs (apk, abi);
-				AddProfilers (apk, abi);
+				//AddBtlsLibs (apk, abi);
+				//AddProfilers (apk, abi);
 			}
 		}
 
