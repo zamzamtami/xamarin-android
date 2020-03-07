@@ -41,11 +41,11 @@ namespace Mono.CodeGeneration
 			AssemblyName myAsmName = new AssemblyName();
 			myAsmName.Name = name;
 #if NET_2_1
-			AssemblyBuilder myAsmBuilder = myDomain.DefineDynamicAssembly (myAsmName, AssemblyBuilderAccess.Run);
+			//AssemblyBuilder myAsmBuilder = myDomain.DefineDynamicAssembly (myAsmName, AssemblyBuilderAccess.Run);
 #else
-			AssemblyBuilder myAsmBuilder = myDomain.DefineDynamicAssembly (myAsmName, AssemblyBuilderAccess.RunAndSave);
+			//AssemblyBuilder myAsmBuilder = myDomain.DefineDynamicAssembly (myAsmName, AssemblyBuilderAccess.RunAndSave);
 #endif
-			module = myAsmBuilder.DefineDynamicModule (name);
+			//module = myAsmBuilder.DefineDynamicModule (name);
 		}
 		
 		public static CodeModule Shared

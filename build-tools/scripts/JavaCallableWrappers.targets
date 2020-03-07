@@ -9,7 +9,8 @@
       <OutputPathAbs Condition="$([System.IO.Path]::IsPathRooted($(OutputPath)))">$(OutputPath)</OutputPathAbs>
       <OutputPathAbs Condition=" '$(OutputPathAbs)' == '' ">$(MSBuildProjectDirectory)\$(OutputPath)</OutputPathAbs>
       <JcwGen>"$(XAInstallPrefix)xbuild\Xamarin\Android\jcw-gen.exe" -v10</JcwGen>
-      <_LibDirs>-L "$(OutputPathAbs.TrimEnd('\'))" -L "$(OutputPathAbs)..\v1.0" -L "$(OutputPathAbs)..\v1.0\Facades"</_LibDirs>
+      <!-- HACK! -->
+      <_LibDirs>-L "$(OutputPathAbs.TrimEnd('\'))" -L "/usr/local/share/dotnet/packs/NETStandard.Library.Ref/2.1.0/ref/netstandard2.1"</_LibDirs>
       <_Out>-o "$(MSBuildProjectDirectory)\$(IntermediateOutputPath)jcw\src"</_Out>
     </PropertyGroup>
     <Exec

@@ -511,10 +511,10 @@ namespace Java.Interop
 	{
 		static DynamicCallbackFactory ()
 		{
-			var ass = AppDomain.CurrentDomain.DefineDynamicAssembly (
-				new AssemblyName ("__callback_factory__"), AssemblyBuilderAccess.Run);
-			Module = ass.DefineDynamicModule ("__callback_factory__");
-			CodeClass = new CodeClass (Module, "__callback_factory__class__");
+			// var ass = AppDomain.CurrentDomain.DefineDynamicAssembly (
+			// 	new AssemblyName ("__callback_factory__"), AssemblyBuilderAccess.Run);
+			// Module = ass.DefineDynamicModule ("__callback_factory__");
+			// CodeClass = new CodeClass (Module, "__callback_factory__class__");
 		}
 		public static ModuleBuilder Module { get; private set; }
 		public static CodeClass CodeClass { get; private set; }

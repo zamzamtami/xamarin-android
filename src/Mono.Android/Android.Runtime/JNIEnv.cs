@@ -170,8 +170,6 @@ namespace Android.Runtime {
 			else
 				IdentityHash = v => v;
 
-			Mono.SystemDependencyProvider.Initialize ();
-
 			BoundExceptionType = (BoundExceptionType)args->ioExceptionType;
 			androidRuntime = new AndroidRuntime (args->env, args->javaVm, androidSdkVersion > 10, args->grefLoader, args->Loader_loadClass);
 			AndroidValueManager = (AndroidValueManager) androidRuntime.ValueManager;
