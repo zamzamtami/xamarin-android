@@ -19,7 +19,7 @@ namespace Android.Runtime {
 			mono_unhandled_exception_method = typeof (System.Diagnostics.Debugger).GetMethod (
 				"Mono_UnhandledException", BindingFlags.NonPublic | BindingFlags.Static);
 			if (mono_unhandled_exception_method == null)
-				AndroidEnvironment.FailFast ("Cannot find System.Diagnostics.Debugger.Mono_UnhandledException");
+				//AndroidEnvironment.FailFast ("Cannot find System.Diagnostics.Debugger.Mono_UnhandledException");
 
 			exception_handler_method = typeof (AndroidEnvironment).GetMethod (
 				"UnhandledException", BindingFlags.NonPublic | BindingFlags.Static);
