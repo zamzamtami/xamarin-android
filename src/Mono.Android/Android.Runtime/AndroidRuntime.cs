@@ -371,8 +371,14 @@ namespace Android.Runtime {
 						throw new InvalidOperationException (String.Format ("Specified managed method '{0}' was not found. Signature: {1}", mname, toks [1]));
 					callback = CreateDynamicCallback (minfo);
 				} else {
+					var t = type;
+					if (toks.Length == 4)
+						t = Type.GetType (toks [3], true);
+					if (Logger.LogTiming) {
+						Logger.Log (LogLevel.Debug, "monodroid-timing", $"# jonp: looking up method `{t}.{toks [2]}()`");
+					}
 					GetCallbackHandler connector = (GetCallbackHandler) Delegate.CreateDelegate (typeof (GetCallbackHandler),
-						toks.Length == 4 ? Type.GetType (toks [3], true) : type, toks [2]);
+						t, toks [2]);
 					callback = connector ();
 				}
 				natives [i] = new JniNativeMethodRegistration (toks [0], toks [1], callback);
