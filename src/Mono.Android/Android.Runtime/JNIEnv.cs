@@ -131,6 +131,12 @@ namespace Android.Runtime {
 				return;
 			}
 
+			bool logTiming          = Logger.LogTiming;
+			IntPtr register_timing  = IntPtr.Zero;
+			if (logTiming) {
+				register_timing     = monodroid_timing_start ($"Registering native methods for managed type: {type.AssemblyQualifiedName}.");
+			}
+
 			var className = Java.Interop.TypeManager.GetClassName (jniClass);
 			Java.Interop.TypeManager.RegisterType (className, type);
 
@@ -138,6 +144,10 @@ namespace Android.Runtime {
 			JniType.GetCachedJniType (ref jniType, className);
 
 			androidRuntime.TypeManager.RegisterNativeMembers (jniType, type, methods_ptr == IntPtr.Zero ? null : new string ((char*) methods_ptr, 0, methods_len));
+
+			if (logTiming) {
+				monodroid_timing_stop (register_timing, $"Finished registering native methods for managed type `{type.AssemblyQualifiedName}` on Java type `{className}`.");
+			}
 		}
 
 		internal static unsafe void Initialize (JnienvInitializeArgs* args)
