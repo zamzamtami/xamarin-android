@@ -9,6 +9,18 @@
 	<dllmap wordsize="32" dll="libintl" target="/system/lib/libc.so" />
 	<dllmap wordsize="64" dll="libintl" target="/system/lib64/libc.so" />
 	<dllmap dll="MonoPosixHelper" target="libMonoPosixHelper.so" />
+	<dllmap dll="System.Globalization.Native">
+		<dllentry os="linux" dll="libSystem.Globalization.Native.so" />
+	</dllmap>
+	<dllmap dll="System.IO.Compression.Native">
+		<dllentry os="linux" dll="libSystem.IO.Compression.Native.so" />
+	</dllmap>
+	<dllmap dll="System.IO.Ports.Native">
+		<dllentry os="linux" dll="libSystem.IO.Ports.Native.so" />
+	</dllmap>
+	<dllmap dll="System.Native">
+		<dllentry os="linux" dll="libSystem.Native.so" />
+	</dllmap>
 	<dllmap wordsize="32" dll="i:msvcrt" target="/system/lib/libc.so" />
 	<dllmap wordsize="64" dll="i:msvcrt" target="/system/lib64/libc.so" />
 	<dllmap wordsize="32" dll="i:msvcrt.dll" target="/system/lib/libc.so" />

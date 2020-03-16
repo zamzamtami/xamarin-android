@@ -70,10 +70,6 @@ public class MonoPackageManager {
 				// the FLAGS_DEBUGGABLE (0x00000002) set and thus we'd revert to the `else` clause
 				// below, leading to an error locating the Mono runtime
 				//
-				System.loadLibrary ("System.Globalization.Native");
-				System.loadLibrary ("System.IO.Compression.Native");
-				System.loadLibrary ("System.IO.Ports.Native");
-				System.loadLibrary ("System.Native");
 				if (BuildConfig.Debug) {
 					System.loadLibrary ("xamarin-debug-app-helper");
 					DebugRuntime.init (apks, runtimeDir, appDirs, externalStorageDirs, android.os.Build.VERSION.SDK_INT, embeddedDSOsEnabled);
