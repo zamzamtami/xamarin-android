@@ -48,7 +48,7 @@ namespace Xamarin.Android.Build.Tests
 					File.Delete (dexFile);
 				}
 			}
-			
+
 			b.Dispose ();
 		}
 
@@ -306,9 +306,9 @@ namespace Xamarin.Android.Build.Tests
 				Assert.Ignore ("Test needs a device attached.");
 				return;
 			}
-			var nativeLib = new AndroidItem.AndroidNativeLibrary ("foo\\x86_64\\libtest.so") {
+			var nativeLib = new AndroidItem.AndroidNativeLibrary ($"foo\\{DeviceAbi}\\libtest.so") {
 				BinaryContent = () => new byte [10],
-				MetadataValues = "Link=libs\\x86_64\\libtest.so",
+				MetadataValues = $"Link=libs\\{DeviceAbi}\\libtest.so",
 			};
 			var proj = new XamarinAndroidApplicationProject () {
 				AndroidFastDeploymentType = "Assemblies:Dexes",

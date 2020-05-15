@@ -56,6 +56,7 @@ namespace Xamarin.Android.Build.Tests
 				Assert.IsTrue (builder.Output.AreTargetsAllBuilt ("_Upload"), "_Upload should have built completely.");
 				Assert.AreEqual ($"package:{proj.PackageName}", RunAdbCommand ($"shell pm list packages {proj.PackageName}").Trim (),
 					$"{proj.PackageName} is not installed on the device.");
+				Assert.IsTrue (builder.Uninstall (proj), "unnstall should have succeeded.");
 			}
 		}
 
@@ -68,7 +69,7 @@ namespace Xamarin.Android.Build.Tests
 			if (!HasDevices) {
 				Assert.Ignore ("Test Skipped no devices or emulators found.");
 			}
-			
+
 			var proj = new XamarinAndroidApplicationProject () {
 				IsRelease = isRelease,
 			};
@@ -136,6 +137,7 @@ namespace Xamarin.Android.Build.Tests
 				proj.SetProperty ("AndroidSigningKeyAlias", "mykey");
 
 				Assert.IsTrue (builder.Install (proj), "second install should succeed.");
+				Assert.IsTrue (builder.Uninstall (proj), "unnstall should have succeeded.");
 			}
 		}
 
@@ -179,7 +181,7 @@ namespace Xamarin.Android.Build.Tests
 				Assert.IsTrue (builder.Install (proj));
 				Assert.AreEqual ($"package:{proj.PackageName}", RunAdbCommand ($"shell pm list packages {proj.PackageName}").Trim (),
 					$"{proj.PackageName} is not installed on the device.");
-			
+
 				directorylist = string.Empty;
 				foreach (var dir in overrideDirs) {
 					var listing = RunAdbCommand ($"shell ls {dir}");
@@ -200,7 +202,7 @@ namespace Xamarin.Android.Build.Tests
 						directorylist += listing;
 				}
 				StringAssert.Contains ($"{proj.AssemblyName}", directorylist, $"{proj.AssemblyName} not found in fastdev directory.");
-			
+
 				Assert.IsTrue (builder.Uninstall (proj));
 				Assert.AreNotEqual ($"package:{proj.PackageName}", RunAdbCommand ($"shell pm list packages {proj.PackageName}").Trim (),
 					$"{proj.PackageName} is installed on the device.");
@@ -262,7 +264,7 @@ namespace Xamarin.Android.Build.Tests
 				StringAssert.Contains ($"{proj.ProjectName}.dll", directorylist, $"{proj.ProjectName}.dll should exist in the .__override__ directory.");
 				StringAssert.Contains ($"System.dll", directorylist, $"System.dll should exist in the .__override__ directory.");
 				StringAssert.Contains ($"Mono.Android.dll", directorylist, $"Mono.Android.dll should exist in the .__override__ directory.");
-
+				Assert.IsTrue (builder.Uninstall (proj), "unnstall should have succeeded.");
 			}
 		}
 
@@ -345,6 +347,7 @@ namespace Xamarin.Android.Build.Tests
 
 				//Deploy one last time to verify install still works without the .__override__ directory existing
 				Assert.IsTrue (builder.Install (proj), "Third install should have succeeded.");
+				Assert.IsTrue (builder.Uninstall (proj), "unnstall should have succeeded.");
 			}
 		}
 
