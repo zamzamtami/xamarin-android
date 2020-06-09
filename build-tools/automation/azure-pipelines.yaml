@@ -106,6 +106,9 @@ stages:
             Write-Host "ERROR: Visual Studio is not installed. vswhere.exe not found: ${vsWhere}"
             exit 1
         }
+
+        Write-Host "Locate MSBuild"
+        &cmd /c "where msbuild.exe"
       displayName: Visual Studio installations
 
     - template: yaml-templates\kill-processes.yaml
