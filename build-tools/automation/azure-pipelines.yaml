@@ -89,6 +89,9 @@ stages:
     - powershell: |
         Write-Host "PATH: ${env:PATH}"
 
+        Write-Host "Locate MSBuild"
+        Get-Command msbuild.exe             # Equivalent of where (windows)/which (mac) command
+
         $vsWhere = "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe"
 
         if ([IO.File]::Exists($vsWhere)) {
