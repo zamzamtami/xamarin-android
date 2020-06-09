@@ -86,6 +86,28 @@ stages:
     - checkout: self
       submodules: recursive
 
+    - powershell: |
+        Write-Host "PATH: ${env:PATH}"
+
+        $vsWhere = "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe"
+
+        if ([IO.File]::Exists($vsWhere)) {
+            $vsInstallsJson = (& "$vsWhere" -prerelease -format json | Out-String)
+
+            Write-Host $vsInstallsJson
+
+            $vsInstalls = ConvertFrom-Json -InputObject $vsInstallsJson
+
+            Write-Host "Visual Studio installed products:"
+            foreach ($vsInstall in $vsInstalls) {
+                Write-Host "  $($vsInstall.productId) $($vsInstall.installationVersion)"
+            }
+        } else {
+            Write-Host "ERROR: Visual Studio is not installed. vswhere.exe not found: ${vsWhere}"
+            exit 1
+        }
+      displayName: Visual Studio installations
+
     - template: yaml-templates\kill-processes.yaml
 
     - template: yaml-templates\clean.yaml
