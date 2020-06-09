@@ -77,8 +77,8 @@ stages:
     displayName: Build and Smoke Test
     pool:
       name: VSEng-Xamarin-Android
-      demands:
-      - Agent.Name -equals vs2019xam000013-1
+      # demands:
+      # - Agent.Name -equals vs2019xam000013-1
 
     timeoutInMinutes: 360
     cancelTimeoutInMinutes: 5
