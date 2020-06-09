@@ -78,7 +78,7 @@ stages:
     pool:
       name: VSEng-Xamarin-Android
       demands:
-      - Agent.Name -equals vs2019xam00000U-1
+      - Agent.Name -equals vs2019xam000013-1
 
     timeoutInMinutes: 360
     cancelTimeoutInMinutes: 5
