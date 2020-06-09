@@ -75,7 +75,11 @@ stages:
   jobs:
   - job: win_build_test
     displayName: Build and Smoke Test
-    pool: $(VSEngWinVS2019)
+    pool:
+      name: VSEng-Xamarin-Android
+      demands:
+      - Agent.Name -equals vs2019xam000013-1
+
     timeoutInMinutes: 360
     cancelTimeoutInMinutes: 5
     steps:
