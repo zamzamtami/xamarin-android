@@ -12,7 +12,7 @@ resources:
   - repository: yaml
     type: github
     name: xamarin/yaml-templates
-    ref: refs/heads/master
+    ref: refs/heads/dev/bond/env-win-vs-msbuild    # UNDONE: Reset to master when yaml-templates branch merges with master
     endpoint: xamarin
   - repository: monodroid
     type: github
@@ -230,6 +230,9 @@ stages:
     steps:
     - checkout: self
       submodules: recursive
+
+    - template: environment/win/vs.v1.yml@yaml        # VS installations and versions
+    - template: environment/win/msbuild.v1.yml@yaml   # MSBuild locations
 
     - template: yaml-templates\kill-processes.yaml
 
